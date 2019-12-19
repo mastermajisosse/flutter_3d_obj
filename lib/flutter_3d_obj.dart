@@ -19,13 +19,17 @@ class Object3D extends StatefulWidget {
     this.angleX,
     this.angleY,
     this.angleZ,
-    this.zoom = 100.0,
+    this.zoomx = 100.0,
+    this.zoomy = 100.0,
+    this.zoomz = 100.0,
   });
 
   final Size size;
   final bool asset;
   final String path;
-  final double zoom;
+  final double zoomx;
+  final double zoomy;
+  final double zoomz;
   final double angleX;
   final double angleY;
   final double angleZ;
@@ -53,10 +57,11 @@ class _Object3DState extends State<Object3D> {
       });
     }
 
-    useInternal = !(widget.angleX != null || widget.angleY != null || widget.angleZ != null);
+    useInternal = !(widget.angleX != null ||
+        widget.angleY != null ||
+        widget.angleZ != null);
     super.initState();
   }
-
 
   bool useInternal;
 
@@ -67,7 +72,9 @@ class _Object3DState extends State<Object3D> {
   double _previousX = 0.0;
   double _previousY = 0.0;
 
-  double zoom;
+  double zoomx;
+  double zoomy;
+  double zoomz;
   String object = "V 1 1 1 1";
 
   File file;
@@ -116,8 +123,17 @@ class _Object3DState extends State<Object3D> {
   Widget build(BuildContext context) {
     return new GestureDetector(
       child: new CustomPaint(
-        painter: new _ObjectPainter(widget.size, object, useInternal ? angleX : widget.angleX,
-            useInternal ? angleY : widget.angleY, useInternal ? angleZ : widget.angleZ, widget.zoom),
+        painter: new _ObjectPainter(
+          widget.size,
+          object,
+          useInternal ? angleX : widget.angleX,
+          useInternal ? angleY : widget.angleY,
+          useInternal ? angleZ : widget.angleZ,
+          // widget.zoom,
+          widget.zoomx,
+          widget.zoomy,
+          widget.zoomz,
+        ),
         size: widget.size,
       ),
       onHorizontalDragUpdate: _updateY,
@@ -127,7 +143,9 @@ class _Object3DState extends State<Object3D> {
 }
 
 class _ObjectPainter extends CustomPainter {
-  double _zoomFactor = 100.0;
+  double _zoomFactorx = 100.0;
+  double _zoomFactory = 100.0;
+  double _zoomFactorz = 100.0;
 
 //  final double _rotation = 5.0; // in degrees
   double _translation = 0.1 / 100;
@@ -137,7 +155,7 @@ class _ObjectPainter extends CustomPainter {
 
   final String object;
 
-  double _viewPortX = 0.0, _viewPortY = 0.0;
+  double _viewPortX = 0.0, _viewPortY = 0.0; //,_viewPortZ = 0.0;
 
   List<Vector3> vertices;
   List<dynamic> faces;
@@ -153,13 +171,15 @@ class _ObjectPainter extends CustomPainter {
 
   Size size;
 
-  _ObjectPainter(this.size, this.object, this.angleX, this.angleY, this.angleZ, this._zoomFactor) {
-    _translation *= _zoomFactor;
+  _ObjectPainter(this.size, this.object, this.angleX, this.angleY, this.angleZ,
+      this._zoomFactorx, this._zoomFactory, this._zoomFactorz) {
+    _translation *= _zoomFactorx;
     camera = new Vector3(0.0, 0.0, 0.0);
     light = new Vector3(0.0, 0.0, 100.0);
     color = new Color.fromARGB(255, 255, 255, 255);
     _viewPortX = (size.width / 2).toDouble();
     _viewPortY = (size.height / 2).toDouble();
+    // _viewPortZ = (size. / 2).toDouble();
   }
 
   Map _parseObjString(String objString) {
@@ -178,7 +198,8 @@ class _ObjectPainter extends CustomPainter {
 
       // vertex
       if (chars[0] == "v") {
-        vertex = new Vector3(double.parse(chars[1]), double.parse(chars[2]), double.parse(chars[3]));
+        vertex = new Vector3(double.parse(chars[1]), double.parse(chars[2]),
+            double.parse(chars[3]));
 
         vertices.add(vertex);
 
@@ -197,7 +218,8 @@ class _ObjectPainter extends CustomPainter {
   }
 
   bool _shouldDrawFace(List face) {
-    var normalVector = _normalVector3(vertices[face[0] - 1], vertices[face[1] - 1], vertices[face[2] - 1]);
+    var normalVector = _normalVector3(
+        vertices[face[0] - 1], vertices[face[1] - 1], vertices[face[2] - 1]);
 
     var dotProduct = normalVector.dot(camera);
     double vectorLengths = normalVector.length * camera.length;
@@ -225,8 +247,15 @@ class _ObjectPainter extends CustomPainter {
 
   Vector3 _calcDefaultVertex(Vector3 vertex) {
     T = new V.Matrix4.translationValues(_viewPortX, _viewPortY, zero);
-    T.scale(_zoomFactor, -_zoomFactor);
+    T.scale(
+      _zoomFactorx,
+      -_zoomFactory,
+      _zoomFactorz,
+    );
 
+    ///
+    ///
+    ///
     T.rotateX(_degreeToRadian(angleX != null ? angleX : 0.0));
     T.rotateY(_degreeToRadian(angleY != null ? angleY : 0.0));
     T.rotateZ(_degreeToRadian(angleZ != null ? angleZ : 0.0));
@@ -243,8 +272,8 @@ class _ObjectPainter extends CustomPainter {
     Paint paint = new Paint();
     Vector3 normalizedLight = new Vector3.copy(light).normalized();
 
-    var normalVector =
-        _normalVector3(verticesToDraw[face[0] - 1], verticesToDraw[face[1] - 1], verticesToDraw[face[2] - 1]);
+    var normalVector = _normalVector3(verticesToDraw[face[0] - 1],
+        verticesToDraw[face[1] - 1], verticesToDraw[face[2] - 1]);
 
     Vector3 jnv = new Vector3.copy(normalVector).normalized();
 
@@ -348,5 +377,5 @@ class _ObjectPainter extends CustomPainter {
       old.angleX != angleX ||
       old.angleY != angleY ||
       old.angleZ != angleZ ||
-      old._zoomFactor != _zoomFactor;
+      old._zoomFactorx != _zoomFactorx;
 }
